@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Geography Explorer - เครื่องมือทางภูมิศาสตร์และเวลาโลก ม.1</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Prompt -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti for Celebration -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        space: {
+                            900: '#0b132b',
+                            800: '#1c2541',
+                            700: '#3a506b',
+                            accent: '#6fffe9',
+                            emerald: '#059669',
+                            coral: '#ff70a6',
+                            gold: '#ffd166'
+                        }
+                    },
+                    fontFamily: {
+                        prompt: ['Prompt', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background: linear-gradient(135deg, #0b132b 0%, #1c2541 50%, #0d1b2a 100%);
+            min-height: 100vh;
+            color: #ffffff;
+            touch-action: manipulation;
+        }
+
+        /* Glassmorphism Styles */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.07);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-btn:active {
+            transform: scale(0.97);
+        }
+
+        @media (hover: hover) {
+            .glass-btn:hover {
+                background: rgba(255, 255, 255, 0.22);
+                border-color: rgba(111, 255, 233, 0.6);
+                box-shadow: 0 0 15px rgba(111, 255, 233, 0.3);
+            }
+        }
+
+        /* Animated Stars Background */
+        .stars-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.5;
+            animation: twinkle var(--duration) infinite ease-in-out;
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.2; transform: scale(0.8); }
+            50% { opacity: 0.9; transform: scale(1.2); }
+        }
+
+        /* Certificate Print CSS Optimization */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .stars-container, header, footer, #startScreen, #quizScreen, #resultScreen, #reviewModal, .no-print {
+                display: none !important;
+            }
+            #certContainer {
+                display: block !important;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100vw;
+                height: 100vh;
+                margin: 0;
+                padding: 0;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            .cert-card-inner {
+                background: white !important;
+                color: #0f172a !important;
+                border: 12px double #b45309 !important;
+                box-shadow: none !important;
+                width: 100% !important;
+                height: 100% !important;
+                box-sizing: border-box;
+            }
+            @page {
+                size: A4 landscape;
+                margin: 0;
+            }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(11, 19, 43, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(111, 255, 233, 0.4);
+            border-radius: 3px;
+        }
+
+        /* Pulsing Glow */
+        .pulse-glow {
+            animation: pulseGlow 2s infinite alternate;
+        }
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 10px rgba(111, 255, 233, 0.2); }
+            100% { box-shadow: 0 0 25px rgba(111, 255, 233, 0.6); }
+        }
+
+        /* Option Shake Animation on Wrong Answer */
+        .shake {
+            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(4px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+            40%, 60% { transform: translate3d(6px, 0, 0); }
+        }
+    </style>
+</head>
+<body class="relative flex flex-col justify-between items-center p-3 sm:p-6 overflow-x-hidden selection:bg-space-accent selection:text-space-900">
+
+    <!-- Starry Background -->
+    <div id="stars" class="stars-container"></div>
+
+    <!-- Audio Control & Top Nav Bar -->
+    <header class="w-full max-w-3xl flex justify-between items-center z-10 mb-4 px-2">
+        <div class="flex items-center gap-2">
+            <i class="fa-solid fa-earth-asia text-space-accent text-2xl sm:text-3xl animate-spin-slow"></i>
+            <span class="font-bold text-lg sm:text-xl tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-space-accent to-blue-400">GEO EXPLORER</span>
+        </div>
+        <div class="flex items-center gap-3">
+            <button id="soundToggleBtn" onclick="toggleSound()" class="glass-btn p-2.5 rounded-full w-10 h-10 flex items-center justify-center text-space-accent hover:text-white transition">
+                <i id="soundIcon" class="fa-solid fa-volume-high"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="w-full max-w-3xl z-10 flex-grow flex items-center justify-center">
+
+        <!-- 1. START SCREEN -->
+        <section id="startScreen" class="w-full glass-card rounded-3xl p-6 sm:p-10 text-center flex flex-col items-center">
+            <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-space-800 border-2 border-space-accent flex items-center justify-center mb-4 pulse-glow">
+                <i class="fa-solid fa-rocket text-space-accent text-3xl sm:text-4xl"></i>
+            </div>
+            
+            <h1 class="text-2xl sm:text-3xl font-extrabold mb-2 text-white">แบบทดสอบปฏิสัมพันธ์ ม.1</h1>
+            <p class="text-space-accent text-sm sm:text-base font-medium mb-6">เรื่อง เครื่องมือทางภูมิศาสตร์และเวลาโลก</p>
+
+            <div class="w-full max-w-md space-y-4 mb-6">
+                <div class="text-left">
+                    <label class="block text-xs text-gray-300 font-semibold mb-1 ml-1"><i class="fa-solid fa-user-astronaut mr-1 text-space-accent"></i> ชื่อนักสำรวจ / นักเรียน</label>
+                    <input type="text" id="playerName" placeholder="กรอกชื่อของคุณที่นี่..." 
+                        class="w-full px-4 py-3 rounded-xl bg-space-900/80 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:border-space-accent focus:ring-2 focus:ring-space-accent/50 transition text-center sm:text-left">
+                </div>
+
+                <div class="text-left">
+                    <label class="block text-xs text-gray-300 font-semibold mb-1 ml-1"><i class="fa-solid fa-compass mr-1 text-space-accent"></i> เลือกภารกิจ (หมวดหมู่)</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <button type="button" onclick="selectCategory('all')" id="catBtn-all" class="cat-btn glass-btn p-3 rounded-xl border-2 border-space-accent text-xs font-semibold text-white flex sm:flex-col items-center justify-center gap-2 transition">
+                            <i class="fa-solid fa-globe text-space-accent text-lg"></i>
+                            <span>ทำทั้งหมด (20 ข้อ)</span>
+                        </button>
+                        <button type="button" onclick="selectCategory('geo')" id="catBtn-geo" class="cat-btn glass-btn p-3 rounded-xl text-xs font-semibold text-gray-300 flex sm:flex-col items-center justify-center gap-2 transition">
+                            <i class="fa-solid fa-map text-cyan-400 text-lg"></i>
+                            <span>ตอนที่ 1 ภูมิศาสตร์ (11 ข้อ)</span>
+                        </button>
+                        <button type="button" onclick="selectCategory('time')" id="catBtn-time" class="cat-btn glass-btn p-3 rounded-xl text-xs font-semibold text-gray-300 flex sm:flex-col items-center justify-center gap-2 transition">
+                            <i class="fa-solid fa-clock text-amber-400 text-lg"></i>
+                            <span>ตอนที่ 2 เวลาโลก (9 ข้อ)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between px-2 pt-2 text-xs text-gray-300">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="randomizeOpt" checked class="w-4 h-4 rounded accent-space-accent">
+                        <span><i class="fa-solid fa-shuffle mr-1"></i> สุ่มลำดับคำถาม</span>
+                    </label>
+                    <span class="text-gray-400"><i class="fa-solid fa-bolt mr-1 text-space-gold"></i> มีตัวจับเวลา</span>
+                </div>
+            </div>
+
+            <button onclick="startGame()" class="w-full max-w-md py-4 rounded-xl bg-gradient-to-r from-teal-400 to-space-accent text-space-900 font-bold text-lg shadow-lg hover:brightness-110 active:scale-95 transition flex items-center justify-center gap-2">
+                <span>เริ่มการสำรวจ</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </section>
+
+        <!-- 2. QUIZ GAMEPLAY SCREEN -->
+        <section id="quizScreen" class="w-full glass-card rounded-3xl p-5 sm:p-8 hidden flex-col">
+            <!-- Header Stats -->
+            <div class="flex flex-wrap items-center justify-between gap-2 pb-4 mb-4 border-b border-white/10 text-xs sm:text-sm">
+                <div class="flex items-center gap-2">
+                    <span id="playerBadge" class="bg-space-800 px-3 py-1 rounded-full border border-space-accent/40 font-medium text-space-accent flex items-center gap-1">
+                        <i class="fa-solid fa-user-astronaut"></i> <span id="displayPlayerName">นักสำรวจ</span>
+                    </span>
+                    <span id="catTag" class="bg-blue-900/60 text-blue-200 px-2.5 py-1 rounded-full text-xs font-medium border border-blue-400/30">
+                        ตอนที่ 1
+                    </span>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <!-- Timer -->
+                    <div class="flex items-center gap-1.5 text-space-gold font-mono font-bold bg-space-900/80 px-3 py-1 rounded-full border border-space-gold/30">
+                        <i class="fa-solid fa-stopwatch text-sm"></i>
+                        <span id="timerDisplay">20</span>s
+                    </div>
+                    <!-- Score -->
+                    <div class="flex items-center gap-1.5 text-emerald-400 font-bold bg-space-900/80 px-3 py-1 rounded-full border border-emerald-500/30">
+                        <i class="fa-solid fa-star text-sm"></i>
+                        <span id="scoreDisplay">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="w-full mb-5">
+                <div class="flex justify-between text-xs text-gray-300 font-medium mb-1">
+                    <span id="progressText">คำถามที่ 1 / 20</span>
+                    <span id="progressPercent">5%</span>
+                </div>
+                <div class="w-full h-2.5 bg-space-900/90 rounded-full overflow-hidden p-0.5 border border-white/10">
+                    <div id="progressBar" class="h-full bg-gradient-to-r from-blue-500 via-space-accent to-emerald-400 rounded-full transition-all duration-300" style="width: 5%;"></div>
+                </div>
+            </div>
+
+            <!-- Question Area -->
+            <div class="min-h-[110px] flex items-center mb-6">
+                <h2 id="questionText" class="text-base sm:text-xl font-semibold leading-relaxed text-white">
+                    ข้อความคำถามจะแสดงที่นี่...
+                </h2>
+            </div>
+
+            <!-- Options Grid -->
+            <div id="optionsContainer" class="grid grid-cols-1 gap-3 mb-4">
+                <!-- Buttons dynamically generated -->
+            </div>
+
+            <!-- Immediate Feedback & Explanation Box -->
+            <div id="feedbackBox" class="hidden rounded-xl p-4 mb-4 text-xs sm:text-sm font-medium border transition-all">
+                <div class="flex items-start gap-2">
+                    <i id="feedbackIcon" class="text-lg mt-0.5"></i>
+                    <div>
+                        <div id="feedbackTitle" class="font-bold text-sm sm:text-base mb-0.5"></div>
+                        <div id="feedbackText" class="text-gray-200"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Next Question Button -->
+            <button id="nextBtn" onclick="nextQuestion()" class="hidden w-full py-3.5 rounded-xl bg-space-accent text-space-900 font-bold text-base hover:brightness-110 active:scale-95 transition items-center justify-center gap-2">
+                <span>ข้อถัดไป</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </section>
+
+        <!-- 3. RESULT SCREEN -->
+        <section id="resultScreen" class="w-full glass-card rounded-3xl p-6 sm:p-10 text-center hidden flex-col items-center">
+            <div id="medalBadge" class="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-space-800 border-4 border-space-gold flex items-center justify-center mb-4 pulse-glow shadow-xl">
+                <i id="medalIcon" class="fa-solid fa-trophy text-space-gold text-4xl sm:text-5xl"></i>
+            </div>
+
+            <h2 id="resultTitle" class="text-2xl sm:text-3xl font-extrabold text-white mb-1">สรุปผลการภารกิจ!</h2>
+            <p id="resultSubtitle" class="text-space-accent text-sm sm:text-base mb-6">สุดยอดมากนักสำรวจ!</p>
+
+            <!-- Stats Grid -->
+            <div class="w-full grid grid-cols-3 gap-2 sm:gap-4 max-w-md mb-6">
+                <div class="bg-space-900/80 border border-white/10 rounded-2xl p-3">
+                    <div class="text-gray-400 text-xs mb-1">คะแนนรวม</div>
+                    <div id="finalScore" class="text-xl sm:text-2xl font-bold text-space-accent">0</div>
+                </div>
+                <div class="bg-space-900/80 border border-white/10 rounded-2xl p-3">
+                    <div class="text-gray-400 text-xs mb-1">ความถูกต้อง</div>
+                    <div id="finalAccuracy" class="text-xl sm:text-2xl font-bold text-emerald-400">0%</div>
+                </div>
+                <div class="bg-space-900/80 border border-white/10 rounded-2xl p-3">
+                    <div class="text-gray-400 text-xs mb-1">ตอบถูกทั้งหมด</div>
+                    <div id="finalCount" class="text-xl sm:text-2xl font-bold text-space-gold">0/20</div>
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="w-full max-w-md space-y-3">
+                <button onclick="openCertificateModal()" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-space-gold via-amber-400 to-amber-500 text-space-900 font-extrabold text-base shadow-lg hover:brightness-110 active:scale-95 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-certificate text-lg"></i>
+                    <span>รับเกียรติบัตรการทดสอบ</span>
+                </button>
+                <button onclick="showReviewModal()" class="w-full py-3.5 rounded-xl glass-btn border border-space-accent/50 text-space-accent font-semibold text-sm sm:text-base hover:bg-space-accent/10 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span>ทบทวนเฉลยอย่างละเอียด</span>
+                </button>
+                <button onclick="resetGame()" class="w-full py-3.5 rounded-xl glass-btn text-white font-bold text-base hover:bg-white/10 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>เล่นใหม่อีกครั้ง</span>
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- CERTIFICATE MODAL -->
+    <div id="certModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden items-center justify-center p-3 sm:p-6 overflow-y-auto">
+        <div class="w-full max-w-4xl flex flex-col items-center">
+            
+            <!-- Controls bar -->
+            <div class="w-full flex flex-wrap justify-between items-center gap-3 mb-4 no-print px-2">
+                <div class="text-white font-bold text-lg flex items-center gap-2">
+                    <i class="fa-solid fa-award text-space-gold text-2xl"></i>
+                    <span>เกียรติบัตรอิเล็กทรอนิกส์</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="printCertificate()" class="px-5 py-2.5 rounded-xl bg-space-accent text-space-900 font-bold text-sm hover:brightness-110 transition flex items-center gap-2 shadow-lg">
+                        <i class="fa-solid fa-print"></i>
+                        <span>พิมพ์ / บันทึก PDF</span>
+                    </button>
+                    <button onclick="closeCertificateModal()" class="w-10 h-10 rounded-full glass-btn text-gray-300 hover:text-white flex items-center justify-center">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Editable Name Banner -->
+            <div class="w-full max-w-md mb-4 no-print glass-card p-3 rounded-2xl flex items-center gap-3">
+                <i class="fa-solid fa-pen-to-square text-space-accent text-lg"></i>
+                <div class="flex-grow">
+                    <label class="block text-xs text-gray-300">แก้ไขชื่อบนเกียรติบัตร:</label>
+                    <input type="text" id="certNameInput" oninput="updateCertName(this.value)" class="w-full bg-transparent border-b border-space-accent/50 text-white font-bold text-sm focus:outline-none focus:border-space-accent py-0.5">
+                </div>
+            </div>
+
+            <!-- CERTIFICATE DISPLAY CONTAINER (DESIGNED FOR A4 LANDSCAPE) -->
+            <div id="certContainer" class="w-full bg-slate-900 p-3 sm:p-6 rounded-3xl shadow-2xl border border-amber-500/30">
+                <div class="cert-card-inner relative w-full bg-gradient-to-b from-slate-900 via-slate-800 to-space-900 p-6 sm:p-10 rounded-2xl border-4 border-amber-400/80 text-center flex flex-col justify-between min-h-[420px] sm:min-h-[500px] overflow-hidden">
+                    
+                    <!-- Decorative Corner Frames -->
+                    <div class="absolute top-2 left-2 w-8 h-8 border-t-2 border-l-2 border-amber-400"></div>
+                    <div class="absolute top-2 right-2 w-8 h-8 border-t-2 border-r-2 border-amber-400"></div>
+                    <div class="absolute bottom-2 left-2 w-8 h-8 border-b-2 border-l-2 border-amber-400"></div>
+                    <div class="absolute bottom-2 right-2 w-8 h-8 border-b-2 border-r-2 border-amber-400"></div>
+
+                    <!-- Watermark Logo -->
+                    <div class="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
+                        <i class="fa-solid fa-globe text-[240px] text-amber-300"></i>
+                    </div>
+
+                    <!-- Certificate Header -->
+                    <div class="relative z-10 space-y-2">
+                        <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-full bg-gradient-to-tr from-amber-600 via-amber-400 to-yellow-200 p-0.5 shadow-lg mb-2">
+                            <div class="w-full h-full bg-space-900 rounded-full flex items-center justify-center border border-amber-300">
+                                <i class="fa-solid fa-graduation-cap text-amber-400 text-2xl sm:text-3xl"></i>
+                            </div>
+                        </div>
+                        <h3 class="text-amber-400 text-xs sm:text-sm font-semibold tracking-widest uppercase">เกียรติบัตรฉบับนี้ให้ไว้เพื่อแสดงว่า</h3>
+                        <h1 id="certStudentName" class="text-2xl sm:text-4xl font-extrabold text-white tracking-wide my-2 border-b-2 border-amber-400/40 pb-2 inline-block max-w-full px-6">
+                            ชื่อ - นามสกุล นักเรียน
+                        </h1>
+                        <p class="text-gray-300 text-xs sm:text-base max-w-2xl mx-auto leading-relaxed">
+                            ได้ผ่านการทดสอบวัดความรู้ปฏิสัมพันธ์ กลุ่มสาระการเรียนรู้สังคมศึกษา ศาสนา และวัฒนธรรม
+                            <br class="hidden sm:inline">
+                            <span class="text-space-accent font-semibold">รายวิชาสังคมศึกษา ชั้นมัธยมศึกษาปีที่ 1</span>
+                        </p>
+                        <p class="text-amber-300 font-bold text-sm sm:text-lg">
+                            เรื่อง "เครื่องมือทางภูมิศาสตร์และเวลาโลก"
+                        </p>
+                    </div>
+
+                    <!-- Evaluation & Score Results -->
+                    <div class="relative z-10 my-4 sm:my-6 py-3 px-6 rounded-2xl bg-space-900/80 border border-amber-500/30 inline-flex flex-wrap items-center justify-around gap-4 mx-auto max-w-xl">
+                        <div>
+                            <div class="text-xs text-gray-400">ผลคะแนนรวม</div>
+                            <div class="text-lg sm:text-2xl font-bold text-space-accent"><span id="certScoreText">0</span> / <span id="certTotalScoreText">200</span></div>
+                        </div>
+                        <div class="h-8 w-px bg-white/20 hidden sm:block"></div>
+                        <div>
+                            <div class="text-xs text-gray-400">คิดเป็นร้อยละ</div>
+                            <div id="certPercentText" class="text-lg sm:text-2xl font-bold text-emerald-400">0%</div>
+                        </div>
+                        <div class="h-8 w-px bg-white/20 hidden sm:block"></div>
+                        <div>
+                            <div class="text-xs text-gray-400">ผลการประเมิน</div>
+                            <div id="certGradeText" class="text-lg sm:text-2xl font-bold text-space-gold">ดีเยี่ยม</div>
+                        </div>
+                    </div>
+
+                    <!-- Certificate Footer & Signatures -->
+                    <div class="relative z-10 flex justify-between items-end pt-4 border-t border-white/10 text-left text-xs sm:text-sm">
+                        <div class="space-y-1">
+                            <div class="text-gray-400">ออกโดย: GEO EXPLORER E-LEARNING</div>
+                            <div class="text-gray-300">วันที่ออกเกียรติบัตร: <span id="certDateText" class="text-amber-300 font-semibold">1 พฤศจิกายน 2567</span></div>
+                        </div>
+                        
+                        <!-- Official Seal Graphic -->
+                        <div class="flex items-center gap-2">
+                            <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-dashed border-amber-400 flex items-center justify-center p-1">
+                                <div class="w-full h-full rounded-full bg-amber-500/20 border border-amber-400 flex flex-col items-center justify-center text-[9px] sm:text-[10px] text-amber-300 font-bold leading-tight text-center">
+                                    <i class="fa-solid fa-certificate text-xs mb-0.5"></i>
+                                    <span>PASSED</span>
+                                    <span>CERTIFIED</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- REVIEW MODAL -->
+    <div id="reviewModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4">
+        <div class="glass-card w-full max-w-2xl max-h-[85vh] rounded-3xl p-5 sm:p-7 flex flex-col border border-space-accent/30">
+            <div class="flex justify-between items-center pb-3 border-b border-white/10 mb-4">
+                <h3 class="text-lg font-bold text-space-accent flex items-center gap-2">
+                    <i class="fa-solid fa-book-open"></i> เฉลยคำตอบทั้งหมดอย่างละเอียด
+                </h3>
+                <button onclick="closeReviewModal()" class="w-8 h-8 rounded-full glass-btn text-gray-300 hover:text-white flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div id="reviewList" class="flex-grow overflow-y-auto space-y-4 pr-1 text-sm text-left">
+                <!-- Review items generated here -->
+            </div>
+
+            <div class="pt-4 border-t border-white/10 mt-3 text-right">
+                <button onclick="closeReviewModal()" class="px-6 py-2.5 rounded-xl bg-space-accent text-space-900 font-bold text-sm">
+                    ปิดหน้าต่าง
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="w-full text-center text-xs text-gray-400 py-3 z-10">
+        สื่อการเรียนรู้อิเล็กทรอนิกส์ วิชาสังคมศึกษา ชั้นมัธยมศึกษาปีที่ 1
+    </footer>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        /* ==================== 1. QUESTION BANK ==================== */
+        const originalQuestions = [
+            // ตอนที่ 1: เครื่องมือทางภูมิศาสตร์ (ข้อ 1-11)
+            {
+                id: 1,
+                cat: 'geo',
+                catName: 'ตอนที่ 1 เครื่องมือทางภูมิศาสตร์',
+                q: "1. เครื่องมือใดแสดงรูปร่างและสัดส่วนของโลกได้ใกล้เคียงความจริงที่สุด",
+                options: ["ก. แผนที่", "ข. รูปถ่ายทางอากาศ", "ค. ลูกโลก", "ง. เข็มทิศ"],
+                answer: 2, // ค
+                explain: "ลูกโลก (Globe) เป็นหุ่นจำลองของโลกที่สร้างเป็นทรงกลม แสดงรูปร่าง สัดส่วน และตำแหน่งของทวีป มหาสมุทร ได้ใกล้เคียงกับความจริงที่สุด"
+            },
+            {
+                id: 2,
+                cat: 'geo',
+                catName: 'ตอนที่ 1 เครื่องมือทางภูมิศาสตร์',
+                q: "2. เข็มทิศใช้ประโยชน์ในข้อใดมากที่สุด",
+                options: ["ก. หาทิศทาง", "ข. วัดอุณหภูมิ", "ค. วัดระยะทาง", "ง. ถ่ายภาพพื้นผิวโลก"],
+                answer: 0, // ก
+                explain: "เข็มทิศทิศทำงานโดยใช้อำนาจแม่เหล็กโลก โดยปลายเข็มทิศจะชี้ไปทางทิศเหนือเสมอ ใช้ในการหาทิศทางในการเดินทาง"
+            },
+            {
+                id: 3,
+                cat: 'geo',
+                catName: 'ตอนที่ 1 เครื่องมือทางภูมิศาสตร์',
+                q: "3. ระบบ GPS ทำงานโดยอาศัยสิ่งใด",
+                options: ["ก. คลื่นวิทยุจากหอส่งสัญญาณในเมือง", "ข. แรงดึงดูดของแม่เหล็กโลก", "ค. ภาพถ่ายจากเครื่องบิน", "ง. สัญญาณจากดาวเทียมหลายดวง"],
+                answer: 3, // ง
+                explain: "ระบบ GPS (Global Positioning System) ทำงานโดยรับสัญญาณพิกัดพิกัดตำแหน่งจากดาวเทียมหลายดวงที่โคจรรอบโลก"
+            },
+            {
+                id: 4,
+                cat: 'geo',
+                catName: 'ตอนที่ 1 เครื่องมือทางภูมิศาสตร์',
+                q: "4. ข้อใดคือข้อดีของภาพจากดาวเทียมเมื่อเทียบกับรูปถ่ายทางอากาศ",
+                options: ["ก. เห็นรายละเอียดของหลังคาบ้านชัดกว่า", "ข. ครอบคลุมพื้นที่กว้างและถ่ายซ้ำเพื่อติดตามการเปลี่ยนแปลงได้", "ค. ต้องใช้นักบินควบคุมทุกครั้ง", "ง. ถ่ายได้เฉพาะในประเทศไทย"],
+                answer: 1, // ข
+                explain: "ภาพจากดาวเทียมสามารถถ่ายภาพครอบคลุมพื้นที่บริเวณกว้างมาก และบันทึกข้อมูลซ้ำพื้นที่เดิมตามรอบเวลาโคจร จึงเหมาะกับการติดตามการเปลี่ยนแปลงของโลก"
+            },
+            {
+                id: 5,
+                cat: 'geo',
+                catName: 'ตอนที่ 1 เครื่องมือทางภูมิศาสตร์',
+                q: "5. GIS ต่างจากแผนที่กระดาษทั่วไปอย่างไร",
+                options: ["ก. มีสีสันสวยงามกว่า", "ข. นำข้อมูลหลายชั้นมาซ้อนกันเพื่อวิเคราะห์ได้", "ค. พับเก็บใส่กระเป๋าได้ง่ายกว่า", "ง. ใช้ได้เฉพาะตอนกลางวัน"],
+                answer: 1, // ข
+                explain: "GIS (ระบบสารสนเทศภูมิศาสตร์) จัดเก็บข้อมูลในรูปแบบเชิงตัวเลขแยกเป็นชั้นข้อมูล (Layers) ทำให้สามารถนำข้อมูลหลายชั้นมาวิเคราะห์ซ้อนทับกันได้"
+            },
+            {
+                id: 6,
+                cat: 'geo',
+                catName: 'ตอนที่ 1 เครื่องมือทางภูมิศาสตร์',
+                q: "6. ข้อใดเป็นข้อจำกัดของลูกโลก",
+                options: ["ก. พกพาไม่สะดวกและแสดงรายละเอียดได้น้อย", "ข. รูปร่างทวีปผิดเพี้ยนมาก", "ค. ใช้ในห้องเรียนไม่ได้", "ง. ต้องใช้แบตเตอรี่"],
+                answer: 0, // ก
+                explain: "เนื่องจากลูกโลกทำเป็นทรงกลมจึงพกพาลำบาก และด้วยขนาดที่จำกัดจึงไม่สามารถลงรายละเอียดสิ่งต่างๆ บนพื้นผิวโลกได้มากนัก"
+            },
+            {
+                id: 7,
+                cat: 'geo',
+                catName: 'ตอนที่ 1 เครื่องมือทางภูมิศาสตร์',
+                q: "7. รูปถ่ายทางอากาศถ่ายจากอุปกรณ์ใด",
+                options: ["ก. ดาวเทียม", "ข. รถยนต์", "ค. เครื่องบินหรืออากาศยานที่บินในระดับต่ำ", "ง. เรือสำรวจ"],
+                answer: 2, // ค
+                explain: "รูปถ่ายทางอากาศได้จากการนำกล้องถ่ายรูปติดกับเครื่องบิน หรืออากาศยานไร้คนขับ (โดรน) บินถ่ายภาพในชั้นบรรยากาศ"
+            },
+            {
+                id: 8,
+                cat: 'geo',
+                catName: 'ตอนที่ 1 เครื่องมือทางภูมิศาสตร์',
+                q: "8. เครื่องมือใดเหมาะกับการเก็บข้อมูลอุณหภูมิเพื่อศึกษาภูมิอากาศ",
+                options: ["ก. เครื่องวัดระยะ", "ข. เข็มทิศ", "ค. ลูกโลก", "ง. เทอร์โมมิเตอร์"],
+                answer: 3, // ง
+                explain: "เทอร์โมมิเตอร์ (Thermometer) เป็นเครื่องมือทางภูมิอากาศที่ใช้สำหรับวัดค่าอุณหภูมิของอากาศ"
+            },
+            {
+                id: 9,
+                cat: 'geo',
+                catName: 'ตอนที่ 1 เครื่องมือทางภูมิศาสตร์',
+                q: "9. ข้อมูลใดเหมาะที่สุดสำหรับติดตามพายุที่กำลังเคลื่อนตัวบนมหาสมุทรกว้างใหญ่",
+                options: ["ก. ภาพจากดาวเทียม", "ข. ลูกโลก", "ค. เข็มทิศ", "ง. รูปถ่ายทางอากาศ"],
+                answer: 0, // ก
+                explain: "ภาพจากดาวเทียมอุตุนิยมวิทยาช่วยให้เห็นภาพรวมของกลุ่มเมฆและพายุในรัศมีกว้างบนมหาสมุทรแบบเรียลไทม์"
+            },
+            {
+                id: 10,
+                cat: 'geo',
+                catName: 'ตอนที่ 1 เครื่องมือทางภูมิศาสตร์',
+                q: "10. ข้อใดจัดเป็นเทคโนโลยีสารสนเทศภูมิศาสตร์",
+                options: ["ก. เข็มทิศ", "ข. ลูกโลก", "ค. เครื่องวัดระยะ", "ง. ระบบกำหนดตำแหน่งบนโลก (GPS)"],
+                answer: 3, // ง
+                explain: "GPS, GIS และ Remote Sensing (การรับรู้จากระยะไกล) ถือเป็นเทคโนโลยีสารสนเทศภูมิศาสตร์สมัยใหม่"
+            },
+            {
+                id: 11,
+                cat: 'geo',
+                catName: 'ตอนที่ 1 เครื่องมือทางภูมิศาสตร์',
+                q: "11. ผู้วางแผนต้องการเลือกที่ตั้งโรงพยาบาลแห่งใหม่ โดยพิจารณาถนน จำนวนประชากร และแหล่งน้ำ ควรใช้เครื่องมือใด",
+                options: ["ก. ลูกโลก", "ข. GIS", "ค. เข็มทิศ", "ง. เทอร์โมมิเตอร์"],
+                answer: 1, // ข
+                explain: "GIS เหมาะอย่างยิ่งสำหรับวิเคราะห์ซ้อนทับชั้นข้อมูลหลายๆ ด้าน (ถนน + ประชากร + แหล่งน้ำ) เพื่อหาตำแหน่งที่เหมาะสมที่สุด"
+            },
+
+            // ตอนที่ 2: เวลาโลก (ข้อ 12-20)
+            {
+                id: 12,
+                cat: 'time',
+                catName: 'ตอนที่ 2 เวลาโลก',
+                q: "12. การหมุนรอบตัวเองของโลกทำให้เกิดปรากฏการณ์ใด",
+                options: ["ก. ฤดูกาลต่างๆ", "ข. กลางวันและกลางคืน", "ค. ปีอธิกสุรทิน", "ง. การเกิดภูเขาไฟ"],
+                answer: 1, // ข
+                explain: "โลกหมุนรอบตัวเอง 1 รอบใช้เวลา 24 ชั่วโมง ด้านที่หันรับแสงอาทิตย์จะเป็นกลางวัน ด้านตรงข้ามจะเป็นกลางคืน"
+            },
+            {
+                id: 13,
+                cat: 'time',
+                catName: 'ตอนที่ 2 เวลาโลก',
+                q: "13. โลกหมุนรอบตัวเองในทิศทางใด",
+                options: ["ก. จากตะวันตกไปตะวันออก", "ข. จากเหนือไปใต้", "ค. จากใต้ไปเหนือ", "ง. จากตะวันออกไปตะวันตก"],
+                answer: 0, // ก
+                explain: "โลกหมุนรอบตัวเองจากทิศตะวันตกไปยังทิศตะวันออก (ทวนเข็มนาฬิกาเมื่อมองจากขั้วโลกเหนือ) ทำให้เราเห็นดวงอาทิตย์ขึ้นทางทิศตะวันออก"
+            },
+            {
+                id: 14,
+                cat: 'time',
+                catName: 'ตอนที่ 2 เวลาโลก',
+                q: "14. เมื่อประเทศไทยเป็นเวลากลางวัน ประเทศที่อยู่ฝั่งตรงข้ามของโลกจะเป็นอย่างไร",
+                options: ["ก. เป็นกลางวันเหมือนกันทุกประเทศ", "ข. เกิดพายุรุนแรง", "ค. เข้าสู่ฤดูหนาวทันที", "ง. ส่วนใหญ่เป็นเวลากลางคืน"],
+                answer: 3, // ง
+                explain: "เนื่องจากโลกเป็นทรงกลม เมื่อไทยได้รับแสงอาทิตย์ (กลางวัน) พื้นที่ตรงข้ามของโลก (เช่น ทวีปอเมริกาใต้) จะไม่ได้รับแสงอาทิตย์จึงเป็นกลางคืน"
+            },
+            {
+                id: 15,
+                cat: 'time',
+                catName: 'ตอนที่ 2 เวลาโลก',
+                q: "15. เหตุใดประเทศต่างๆ ทั่วโลกจึงมีเวลาไม่เท่ากัน",
+                options: ["ก. แต่ละประเทศตั้งนาฬิกาตามความพอใจ", "ข. โลกหมุนรอบดวงอาทิตย์ช้ามาก", "ค. โลกเป็นทรงกลมและหมุนรอบตัวเอง แต่ละพื้นที่จึงได้รับแสงอาทิตย์ไม่พร้อมกัน", "ง. ดวงอาทิตย์เคลื่อนที่วนรอบโลก"],
+                answer: 2, // ค
+                explain: "รูปทรงกลมและการหมุนของโลก ทำให้แสงอาทิตย์ส่องสว่างแต่ละลองจิจูดไม่พร้อมกัน จึงต้องกำหนดเขตเวลาให้สอดคล้องกับตำแหน่งดวงอาทิตย์"
+            },
+            {
+                id: 16,
+                cat: 'time',
+                catName: 'ตอนที่ 2 เวลาโลก',
+                q: "16. ญี่ปุ่นอยู่ทางทิศตะวันออกของไทย เมื่อเปรียบเทียบเวลาของสองประเทศจะเป็นอย่างไร",
+                options: ["ก. ญี่ปุ่นมีเวลาเร็วกว่าไทย", "ข. ญี่ปุ่นมีเวลาช้ากว่าไทย", "ค. เวลาเท่ากันเสมอ", "ง. ญี่ปุ่นไม่ใช้เวลาเดียวกับใครเลย"],
+                answer: 0, // ก
+                explain: "โลกหมุนจากตะวันตกไปตะวันออก ทำให้พื้นที่ทางทิศตะวันออกได้รับแสงอาทิตย์และเข้าสู่ช่วงเวลาใหม่ก่อนพื้นที่ทางทิศตะวันตก (ญี่ปุ่นเร็วกว่าไทย 2 ชั่วโมง)"
+            },
+            {
+                id: 17,
+                cat: 'time',
+                catName: 'ตอนที่ 2 เวลาโลก',
+                q: "17. นักเดินทางบินจากไทยไปอเมริกา แล้วรู้สึกง่วงและนอนไม่เป็นเวลาหลายวัน เกิดจากสาเหตุใด",
+                options: ["ก. อากาศบนเครื่องบินหนาวเกินไป", "ข. เครื่องบินบินเร็วเกินไป", "ค. เวลาท้องถิ่นต่างจากเวลาที่ร่างกายคุ้นเคย", "ง. อาหารบนเครื่องบินไม่ถูกปาก"],
+                answer: 2, // ค
+                explain: "เป็นอาการ Jet Lag เกิดจากการเดินทางข้ามเขตเวลาอย่างรวดเร็ว ทำให้นาฬิกาชีวภาพในร่างกายยังปรับตัวตามเวลาท้องถิ่นใหม่ไม่ทัน"
+            },
+            {
+                id: 18,
+                cat: 'time',
+                catName: 'ตอนที่ 2 เวลาโลก',
+                q: "18. เวลามาตรฐานที่กำหนดให้คนในพื้นที่หนึ่งใช้ตรงกัน เรียกว่าอะไร",
+                options: ["ก. เขตภูมิอากาศ", "ข. เขตเวลา", "ค. เขตแดน", "ง. เขตการปกครอง"],
+                answer: 1, // ข
+                explain: "เขตเวลา (Time Zone) คือ บริเวณของโลกที่ใช้เวลามาตรฐานเดียวกัน โดยอ้างอิงจากเส้นลองจิจูด"
+            },
+            {
+                id: 19,
+                cat: 'time',
+                catName: 'ตอนที่ 2 เวลาโลก',
+                q: "19. เส้นแบ่งเขตวันสากลมีหน้าที่สำคัญอย่างไร",
+                options: ["ก. แบ่งทวีปออกจากกัน", "ข. แบ่งเขตภูมิอากาศของโลก", "ค. กำหนดจุดที่วันที่เปลี่ยนไปหนึ่งวัน", "ง. แบ่งอาณาเขตของประเทศต่างๆ"],
+                answer: 2, // ค
+                explain: "เส้นแบ่งเขตวันสากล (International Date Line) ที่ลองจิจูด 180 องศา เป็นจุดที่กำหนดให้มีการเปลี่ยนวันที่เมื่อข้ามเส้นนี้"
+            },
+            {
+                id: 20,
+                cat: 'time',
+                catName: 'ตอนที่ 2 เวลาโลก',
+                q: "20. การรู้เรื่องเวลาโลกมีประโยชน์ต่อชีวิตประจำวันอย่างไร",
+                options: ["ก. ใช้ทำนายปริมาณฝน", "ข. ใช้วัดอุณหภูมิอากาศ", "ค. ใช้หาความสูงของภูเขา", "ง. ใช้นัดประชุมออนไลน์หรือวางแผนเดินทางข้ามประเทศได้ถูกเวลา"],
+                answer: 3, // ง
+                explain: "การเข้าใจเรื่องความต่างของเวลาโลก ช่วยให้สามารถติดต่อสื่อสาร ประชุมออนไลน์ หรือวางแผนการเดินทางระหว่างประเทศได้อย่างถูกต้องเหมาะสม"
+            }
+        ];
+
+        /* ==================== 2. WEB AUDIO API SOUND SYSTEM ==================== */
+        class SoundSystem {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+            }
+
+            playClick() {
+                if (this.muted) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.05);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.05);
+            }
+
+            playCorrect() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+                osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+                osc.frequency.setValueAtTime(1046.50, now + 0.24); // C6
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.45);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(now + 0.45);
+            }
+
+            playWrong() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now); // A3
+                osc.frequency.linearRampToValueAtTime(130, now + 0.25); // Pitch drop
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(now + 0.3);
+            }
+
+            playWin() {
+                if (this.muted) return;
+                this.init();
+                const notes = [440, 554.37, 659.25, 880];
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    const now = this.ctx.currentTime + (idx * 0.12);
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                });
+            }
+        }
+
+        const sound = new SoundSystem();
+
+        function toggleSound() {
+            sound.muted = !sound.muted;
+            const icon = document.getElementById('soundIcon');
+            if (sound.muted) {
+                icon.className = "fa-solid fa-volume-xmark text-gray-400";
+            } else {
+                icon.className = "fa-solid fa-volume-high text-space-accent";
+                sound.playClick();
+            }
+        }
+
+        /* ==================== 3. GAME STATE & LOGIC ==================== */
+        let selectedCategory = 'all';
+        let currentQuestions = [];
+        let currentIndex = 0;
+        let score = 0;
+        let timer = null;
+        let timeLeft = 20;
+        let userAnswers = []; // Record user choices for review
+        let isAnswered = false;
+
+        // Init Background Stars
+        function createStars() {
+            const container = document.getElementById('stars');
+            container.innerHTML = '';
+            const starCount = window.innerWidth < 640 ? 35 : 70;
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                const size = Math.random() * 3 + 1;
+                star.style.width = `${size}px`;
+                star.style.height = `${size}px`;
+                star.style.top = `${Math.random() * 100}%`;
+                star.style.left = `${Math.random() * 100}%`;
+                star.style.setProperty('--duration', `${Math.random() * 3 + 2}s`);
+                container.appendChild(star);
+            }
+        }
+        window.addEventListener('resize', createStars);
+        createStars();
+
+        function selectCategory(cat) {
+            sound.playClick();
+            selectedCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.classList.remove('border-2', 'border-space-accent', 'text-white');
+                btn.classList.add('text-gray-300');
+            });
+            const selectedBtn = document.getElementById(`catBtn-${cat}`);
+            selectedBtn.classList.add('border-2', 'border-space-accent', 'text-white');
+            selectedBtn.classList.remove('text-gray-300');
+        }
+
+        function startGame() {
+            sound.playClick();
+            const playerNameInput = document.getElementById('playerName').value.trim();
+            const playerName = playerNameInput || "นักสำรวจน้อย";
+            document.getElementById('displayPlayerName').innerText = playerName;
+
+            // Filter Questions
+            if (selectedCategory === 'all') {
+                currentQuestions = [...originalQuestions];
+            } else {
+                currentQuestions = originalQuestions.filter(q => q.cat === selectedCategory);
+            }
+
+            // Shuffle if checked
+            const randomize = document.getElementById('randomizeOpt').checked;
+            if (randomize) {
+                currentQuestions.sort(() => Math.random() - 0.5);
+            }
+
+            currentIndex = 0;
+            score = 0;
+            userAnswers = [];
+
+            // Switch Screen
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('quizScreen').classList.remove('hidden');
+            document.getElementById('quizScreen').classList.add('flex');
+
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            isAnswered = false;
+            clearInterval(timer);
+
+            const q = currentQuestions[currentIndex];
+            document.getElementById('catTag').innerText = q.catName;
+            document.getElementById('questionText').innerText = q.q;
+
+            // Update Progress
+            const total = currentQuestions.length;
+            const currentNum = currentIndex + 1;
+            const percent = Math.round((currentNum / total) * 100);
+            document.getElementById('progressText').innerText = `คำถามที่ ${currentNum} / ${total}`;
+            document.getElementById('progressPercent').innerText = `${percent}%`;
+            document.getElementById('progressBar').style.width = `${percent}%`;
+            document.getElementById('scoreDisplay').innerText = score;
+
+            // Reset UI components
+            document.getElementById('feedbackBox').classList.add('hidden');
+            document.getElementById('nextBtn').classList.add('hidden');
+            document.getElementById('nextBtn').classList.remove('flex');
+
+            // Render Options
+            const container = document.getElementById('optionsContainer');
+            container.innerHTML = '';
+            
+            q.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = "option-btn glass-btn w-full p-4 rounded-2xl text-left text-sm sm:text-base text-gray-100 flex items-center justify-between transition-all border border-white/10 hover:border-space-accent/50";
+                btn.onclick = () => checkAnswer(index, btn);
+                btn.innerHTML = `
+                    <span>${opt}</span>
+                    <i class="opt-icon fa-regular fa-circle text-gray-400 text-lg"></i>
+                `;
+                container.appendChild(btn);
+            });
+
+            // Start Timer (20 seconds per question)
+            timeLeft = 20;
+            document.getElementById('timerDisplay').innerText = timeLeft;
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timerDisplay').innerText = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    timeOutHandler();
+                }
+            }, 1000);
+        }
+
+        function checkAnswer(selectedIndex, btnElement) {
+            if (isAnswered) return;
+            isAnswered = true;
+            clearInterval(timer);
+
+            const q = currentQuestions[currentIndex];
+            const isCorrect = selectedIndex === q.answer;
+
+            // Save user answer log
+            userAnswers.push({
+                question: q.q,
+                userChoice: q.options[selectedIndex],
+                correctChoice: q.options[q.answer],
+                isCorrect: isCorrect,
+                explanation: q.explain
+            });
+
+            const allOptions = document.querySelectorAll('.option-btn');
+            allOptions.forEach(btn => btn.style.pointerEvents = 'none'); // Disable clicking
+
+            const feedbackBox = document.getElementById('feedbackBox');
+            const feedbackIcon = document.getElementById('feedbackIcon');
+            const feedbackTitle = document.getElementById('feedbackTitle');
+            const feedbackText = document.getElementById('feedbackText');
+
+            if (isCorrect) {
+                sound.playCorrect();
+                score += 10;
+                document.getElementById('scoreDisplay').innerText = score;
+
+                // Styling correct button
+                btnElement.classList.remove('glass-btn', 'border-white/10');
+                btnElement.classList.add('bg-emerald-600/40', 'border-emerald-400', 'text-white', 'shadow-lg');
+                btnElement.querySelector('.opt-icon').className = "opt-icon fa-solid fa-circle-check text-emerald-400 text-xl";
+
+                // Feedback
+                feedbackBox.className = "rounded-xl p-4 mb-4 text-xs sm:text-sm font-medium border border-emerald-500/40 bg-emerald-950/40 text-emerald-200 block";
+                feedbackIcon.className = "fa-solid fa-circle-check text-emerald-400 text-xl";
+                feedbackTitle.innerText = "ถูกต้องแม่นยำ! (+10 คะแนน)";
+                feedbackText.innerText = q.explain;
+            } else {
+                sound.playWrong();
+                // Styling wrong button
+                btnElement.classList.remove('glass-btn', 'border-white/10');
+                btnElement.classList.add('bg-rose-600/40', 'border-rose-400', 'text-white', 'shake');
+                btnElement.querySelector('.opt-icon').className = "opt-icon fa-solid fa-circle-xmark text-rose-400 text-xl";
+
+                // Highlight correct option
+                const correctBtn = allOptions[q.answer];
+                correctBtn.classList.remove('glass-btn');
+                correctBtn.classList.add('bg-emerald-600/30', 'border-emerald-400/80');
+                correctBtn.querySelector('.opt-icon').className = "opt-icon fa-solid fa-circle-check text-emerald-400 text-xl";
+
+                // Feedback
+                feedbackBox.className = "rounded-xl p-4 mb-4 text-xs sm:text-sm font-medium border border-rose-500/40 bg-rose-950/40 text-rose-200 block";
+                feedbackIcon.className = "fa-solid fa-circle-xmark text-rose-400 text-xl";
+                feedbackTitle.innerText = "ยังไม่ถูกต้อง!";
+                feedbackText.innerText = q.explain;
+            }
+
+            // Show Next Button
+            const nextBtn = document.getElementById('nextBtn');
+            nextBtn.classList.remove('hidden');
+            nextBtn.classList.add('flex');
+            
+            if (currentIndex === currentQuestions.length - 1) {
+                nextBtn.querySelector('span').innerText = "ดูผลสรุปคะแนน";
+            } else {
+                nextBtn.querySelector('span').innerText = "ข้อถัดไป";
+            }
+        }
+
+        function timeOutHandler() {
+            if (isAnswered) return;
+            isAnswered = true;
+            sound.playWrong();
+
+            const q = currentQuestions[currentIndex];
+            userAnswers.push({
+                question: q.q,
+                userChoice: "หมดเวลาการตอบ",
+                correctChoice: q.options[q.answer],
+                isCorrect: false,
+                explanation: q.explain
+            });
+
+            const allOptions = document.querySelectorAll('.option-btn');
+            allOptions.forEach(btn => btn.style.pointerEvents = 'none');
+
+            // Highlight correct answer
+            const correctBtn = allOptions[q.answer];
+            correctBtn.classList.remove('glass-btn');
+            correctBtn.classList.add('bg-emerald-600/30', 'border-emerald-400/80');
+            correctBtn.querySelector('.opt-icon').className = "opt-icon fa-solid fa-circle-check text-emerald-400 text-xl";
+
+            const feedbackBox = document.getElementById('feedbackBox');
+            feedbackBox.className = "rounded-xl p-4 mb-4 text-xs sm:text-sm font-medium border border-amber-500/40 bg-amber-950/40 text-amber-200 block";
+            document.getElementById('feedbackIcon').className = "fa-solid fa-clock text-amber-400 text-xl";
+            document.getElementById('feedbackTitle').innerText = "หมดเวลาตอบ!";
+            document.getElementById('feedbackText').innerText = q.explain;
+
+            const nextBtn = document.getElementById('nextBtn');
+            nextBtn.classList.remove('hidden');
+            nextBtn.classList.add('flex');
+        }
+
+        function nextQuestion() {
+            sound.playClick();
+            currentIndex++;
+            if (currentIndex < currentQuestions.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        /* ==================== 4. RESULT & REVIEW ==================== */
+        function showResults() {
+            document.getElementById('quizScreen').classList.add('hidden');
+            document.getElementById('resultScreen').classList.remove('hidden');
+            document.getElementById('resultScreen').classList.add('flex');
+
+            const total = currentQuestions.length;
+            const correctCount = userAnswers.filter(a => a.isCorrect).length;
+            const accuracy = Math.round((correctCount / total) * 100);
+
+            document.getElementById('finalScore').innerText = score;
+            document.getElementById('finalAccuracy').innerText = `${accuracy}%`;
+            document.getElementById('finalCount').innerText = `${correctCount}/${total}`;
+
+            // Medal Badges
+            const medalBadge = document.getElementById('medalBadge');
+            const medalIcon = document.getElementById('medalIcon');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultSubtitle = document.getElementById('resultSubtitle');
+
+            if (accuracy >= 80) {
+                sound.playWin();
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                medalBadge.className = "w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-amber-500/20 border-4 border-amber-400 flex items-center justify-center mb-4 pulse-glow shadow-xl text-amber-400";
+                medalIcon.className = "fa-solid fa-trophy text-4xl sm:text-5xl";
+                resultTitle.innerText = "ระดับกัปตันอวกาศ! (เหรียญทอง)";
+                resultSubtitle.innerText = "ยอดเยี่ยมมาก! คุณมีความรู้ภูมิศาสตร์และเวลาโลกขั้นสูง";
+            } else if (accuracy >= 50) {
+                sound.playCorrect();
+                medalBadge.className = "w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-slate-400/20 border-4 border-slate-300 flex items-center justify-center mb-4 shadow-xl text-slate-300";
+                medalIcon.className = "fa-solid fa-medal text-4xl sm:text-5xl";
+                resultTitle.innerText = "ระดับนักสำรวจชำนาญการ (เหรียญเงิน)";
+                resultSubtitle.innerText = "เก่งมาก! ทำคะแนนผ่านเกณฑ์ได้ดีเยี่ยม";
+            } else {
+                sound.playWrong();
+                medalBadge.className = "w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-amber-700/20 border-4 border-amber-600 flex items-center justify-center mb-4 shadow-xl text-amber-600";
+                medalIcon.className = "fa-solid fa-award text-4xl sm:text-5xl";
+                resultTitle.innerText = "ระดับนักสำรวจฝึกหัด (เหรียญทองแดง)";
+                resultSubtitle.innerText = "พยายามได้ดี! กดปุ่มทบทวนเฉลยเพื่อฝึกฝนเพิ่มเติมนะ";
+            }
+        }
+
+        /* ==================== 5. E-CERTIFICATE LOGIC ==================== */
+        function openCertificateModal() {
+            sound.playClick();
+            const currentName = document.getElementById('displayPlayerName').innerText || "นักเรียน";
+            document.getElementById('certNameInput').value = currentName;
+            document.getElementById('certStudentName').innerText = currentName;
+
+            const totalQuestions = currentQuestions.length;
+            const correctCount = userAnswers.filter(a => a.isCorrect).length;
+            const accuracy = Math.round((correctCount / totalQuestions) * 100);
+            const totalMaxScore = totalQuestions * 10;
+
+            document.getElementById('certScoreText').innerText = score;
+            document.getElementById('certTotalScoreText').innerText = totalMaxScore;
+            document.getElementById('certPercentText').innerText = `${accuracy}%`;
+
+            // Evaluation Criteria
+            let grade = "ผ่านเกณฑ์";
+            let gradeColor = "text-emerald-400";
+            if (accuracy >= 80) {
+                grade = "ดีเยี่ยม";
+                gradeColor = "text-space-gold";
+            } else if (accuracy >= 60) {
+                grade = "ดีมาก";
+                gradeColor = "text-amber-300";
+            } else if (accuracy >= 50) {
+                grade = "ผ่านเกณฑ์";
+                gradeColor = "text-emerald-400";
+            } else {
+                grade = "ควรปรับปรุง";
+                gradeColor = "text-rose-400";
+            }
+            const gradeEl = document.getElementById('certGradeText');
+            gradeEl.innerText = grade;
+            gradeEl.className = `text-lg sm:text-2xl font-bold ${gradeColor}`;
+
+            // Thai Date Format
+            const now = new Date();
+            const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+            const thaiDateStr = `${now.getDate()} ${thaiMonths[now.getMonth()]} ${now.getFullYear() + 543}`;
+            document.getElementById('certDateText').innerText = thaiDateStr;
+
+            document.getElementById('certModal').classList.remove('hidden');
+            document.getElementById('certModal').classList.add('flex');
+        }
+
+        function updateCertName(val) {
+            document.getElementById('certStudentName').innerText = val.trim() || "นักเรียน";
+        }
+
+        function closeCertificateModal() {
+            sound.playClick();
+            document.getElementById('certModal').classList.add('hidden');
+            document.getElementById('certModal').classList.remove('flex');
+        }
+
+        function printCertificate() {
+            window.print();
+        }
+
+        function showReviewModal() {
+            sound.playClick();
+            const list = document.getElementById('reviewList');
+            list.innerHTML = '';
+
+            userAnswers.forEach((ans, idx) => {
+                const item = document.createElement('div');
+                item.className = `p-4 rounded-2xl border ${ans.isCorrect ? 'bg-emerald-950/20 border-emerald-500/30' : 'bg-rose-950/20 border-rose-500/30'}`;
+                item.innerHTML = `
+                    <div class="font-bold text-white mb-2 flex items-start justify-between gap-2">
+                        <span>${idx + 1}. ${ans.question}</span>
+                        <span class="px-2 py-0.5 rounded text-xs shrink-0 ${ans.isCorrect ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'}">
+                            ${ans.isCorrect ? '<i class="fa-solid fa-check mr-1"></i>ถูก' : '<i class="fa-solid fa-xmark mr-1"></i>ผิด'}
+                        </span>
+                    </div>
+                    <div class="text-xs space-y-1 mb-2">
+                        <div class="${ans.isCorrect ? 'text-emerald-300' : 'text-rose-300'} font-medium">
+                            คำตอบของคุณ: ${ans.userChoice}
+                        </div>
+                        ${!ans.isCorrect ? `<div class="text-emerald-400 font-medium">คำตอบที่ถูกต้อง: ${ans.correctChoice}</div>` : ''}
+                    </div>
+                    <div class="text-xs text-gray-300 bg-space-900/60 p-2.5 rounded-xl border border-white/5">
+                        <i class="fa-solid fa-lightbulb text-space-gold mr-1"></i> <strong>คำอธิบาย:</strong> ${ans.explanation}
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+
+            document.getElementById('reviewModal').classList.remove('hidden');
+            document.getElementById('reviewModal').classList.add('flex');
+        }
+
+        function closeReviewModal() {
+            sound.playClick();
+            document.getElementById('reviewModal').classList.add('hidden');
+            document.getElementById('reviewModal').classList.remove('flex');
+        }
+
+        function resetGame() {
+            sound.playClick();
+            document.getElementById('resultScreen').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
